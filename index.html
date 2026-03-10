@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RBS Contract Services Ltd | M+E Contractors London</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Scripts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@19.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@19.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.475.0",
+        "@google/genai": "https://esm.sh/@google/genai@1.30.0"
+      }
+    }
+    </script>
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              rbs: {
+                blue: '#000000',
+                accent: '#C0C0C0',
+                gold: '#A0A0A0',
+                light: '#f8fafc',
+              }
+            },
+            fontFamily: {
+              serif: ['"Playfair Display"', 'serif'],
+              sans: ['"Inter"', 'sans-serif'],
+            }
+          }
+        }
+      }
+    </script>
+    
+    <style>
+      body { 
+        font-family: 'Inter', sans-serif;
+        background: linear-gradient(160deg, #000000 0%, #080808 20%, #111111 40%, #0c0c0c 60%, #060606 80%, #000000 100%);
+        min-height: 100vh;
+      }
+      .scroll-smooth { scroll-behavior: smooth; }
+      
+      /* Platinum gradient text for headings */
+      .platinum-text {
+        background: linear-gradient(135deg, #888888 0%, #C0C0C0 30%, #E8E8E8 50%, #C0C0C0 70%, #888888 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      /* Page background gradient overlay */
+      .page-bg {
+        background: linear-gradient(160deg, #000000 0%, #0a0a0a 25%, #121212 50%, #0a0a0a 75%, #000000 100%);
+      }
+
+      @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes slide-up { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+      @keyframes card-in { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+      .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
+      .animate-slide-up { animation: slide-up 0.5s ease-out forwards; }
+      .service-card { opacity: 0; transition: border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease; }
+      .service-card.visible { animation: card-in 0.6s ease-out forwards; }
+      .service-card:hover { transform: translateY(-6px); box-shadow: 0 12px 40px rgba(192,192,192,0.12); background-color: #1a1a1a; }
+      .service-card:nth-child(1) { animation-delay: 0.05s; }
+      .service-card:nth-child(2) { animation-delay: 0.15s; }
+      .service-card:nth-child(3) { animation-delay: 0.25s; }
+      .service-card:nth-child(4) { animation-delay: 0.35s; }
+      .service-card:nth-child(5) { animation-delay: 0.45s; }
+      .service-card:nth-child(6) { animation-delay: 0.55s; }
+
+      /* Navbar gradient */
+      .navbar-bg {
+        background: linear-gradient(180deg, #000000 0%, #080808 100%);
+        border-bottom: 1px solid rgba(192,192,192,0.15);
+      }
+
+      /* Footer gradient */
+      .footer-bg {
+        background: linear-gradient(180deg, #080808 0%, #000000 100%);
+        border-top: 1px solid rgba(192,192,192,0.1);
+      }
+
+      /* Section alternating gradients */
+      .section-dark {
+        background: linear-gradient(180deg, #000000 0%, #0a0a0a 50%, #000000 100%);
+      }
+      .section-mid {
+        background: linear-gradient(180deg, #0a0a0a 0%, #111111 50%, #0a0a0a 100%);
+      }
+    </style>
+</head>
+<body class="text-zinc-300 scroll-smooth" style="background: linear-gradient(135deg, #000000 0%, #0a0a0a 30%, #111111 50%, #0d0d0d 70%, #050505 100%); min-height: 100vh;">
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect, useMemo } from 'react';
+        import ReactDOM from 'react-dom/client';
+        import { 
+            Menu, X, Phone, Mail, MapPin, ArrowRight, CheckCircle, 
+            Fan, Zap, ClipboardCheck, ShieldAlert, Leaf, Building, 
+            Sparkles, Send, Loader2, AlertTriangle, Check, AlertCircle, 
+            Wand2, ClipboardList, Star, Quote, Search, CheckCircle2 
+        } from 'lucide-react';
+        import { GoogleGenAI, Type } from '@google/genai';
+
+        // --- Configuration ---
+        // ADD YOUR GEMINI API KEY HERE TO ENABLE AI FEATURES
+        const GEMINI_API_KEY = ""; 
+
+        const COMPANY_NAME = "RBS CONTRACT SERVICES LTD";
+        const PHONE_NUMBER = "07762014724";
+        const EMAIL_ADDRESS = "info@rbscontractservices.co.uk";
+        const ADDRESS = "86-90 Paul Street, London, EC2A 4NE";
+
+        const ViewState = {
+            HOME: 'HOME',
+            SERVICES: 'SERVICES',
+            ABOUT: 'ABOUT',
+            CONTACT: 'CONTACT'
+        };
+
+        const SERVICES_DATA = [
+            {
+                id: 'mech',
+                title: 'Mechanical Services',
+                description: 'Comprehensive heating, ventilation, and air conditioning (HVAC) solutions for commercial and industrial premises.',
+                icon: Fan,
+                features: [
+                    'Commercial Boiler Installation & Repair',
+                    'Chiller & Cooling Tower Maintenance',
+                    'Ventilation & Ductwork Fabrication',
+                    'VRF/VRV Air Conditioning Systems',
+                    'Pump & Motor Overhauls'
+                ]
+            },
+            {
+                id: 'elec',
+                title: 'Electrical Engineering',
+                description: 'Full electrical design, installation, and maintenance including LV distribution, lighting control, and power systems.',
+                icon: Zap,
+                features: [
+                    'LV Distribution & Switchgear',
+                    'Lutron Lighting Control Specialists',
+                    'Power Factor Correction',
+                    'Emergency Lighting Testing',
+                    'Containment Systems (Tray/Trunking)'
+                ]
+            },
+            {
+                id: 'ppm',
+                title: 'Planned Maintenance',
+                description: 'Bespoke Planned Preventative Maintenance (PPM) contracts to ensure your building compliance and asset longevity.',
+                icon: ClipboardCheck,
+                features: [
+                    'SFG20 Standard Compliance',
+                    'Asset Register Compilation',
+                    'Statutory Compliance Audits',
+                    '24/7 Emergency Call-out',
+                    'Condition Reports'
+                ]
+            },
+            {
+                id: 'fire',
+                title: 'Fire & Security',
+                description: 'Installation and maintenance of fire alarms, access control systems, and CCTV to protect your assets.',
+                icon: ShieldAlert,
+                features: [
+                    'Addressable Fire Alarm Systems',
+                    'AOV (Automatic Opening Vents)',
+                    'CCTV & Access Control Integration',
+                    'Intruder Alarms',
+                    'Fire Extinguisher Maintenance'
+                ]
+            },
+            {
+                id: 'sust',
+                title: 'Sustainability & Energy',
+                description: 'Energy audits, LED upgrades, and renewable technology integration to reduce your carbon footprint.',
+                icon: Leaf,
+                features: [
+                    'Commercial Energy Audits',
+                    'Solar PV Installation',
+                    'Lutron Smart Lighting Solutions',
+                    'EV Charging Points',
+                    'BMS (Building Management Systems)'
+                ]
+            },
+            {
+                id: 'fitout',
+                title: 'Commercial Fit Out',
+                description: 'End-to-end M+E support for Cat A and Cat B office fit-outs across London.',
+                icon: Building,
+                features: [
+                    'Shell & Core M+E',
+                    'Cat A & Cat B Fit-outs',
+                    'Data Center Infrastructure',
+                    'Office Refurbishments',
+                    'Project Management'
+                ]
+            }
+        ];
+
+        const TESTIMONIALS_DATA = [
+            {
+                id: '1',
+                client: 'Major City Bank',
+                quote: 'RBS delivered our floor fit-out ahead of schedule. Their electrical team was exceptional.',
+                project: 'Canary Wharf HQ'
+            },
+            {
+                id: '2',
+                client: 'London NHS Trust',
+                quote: 'Reliable, safe, and professional. The mechanical upgrades have significantly improved our air quality.',
+                project: 'Hospital Wing Upgrade'
+            }
+        ];
+
+        // --- AI Services ---
+        const ai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
+
+        const analyzeProjectRequest = async (userQuery) => {
+            if (!ai) return null;
+            try {
+                const response = await ai.models.generateContent({
+                    model: 'gemini-2.5-flash',
+                    contents: `Analyze this M+E contracting inquiry: "${userQuery}". Categorize it, determine urgency, provide a technical summary, a recommended action, and a checklist of 3 preparation steps.`,
+                    config: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: Type.OBJECT,
+                            properties: {
+                                category: { type: Type.STRING },
+                                priorityLevel: { type: Type.STRING, enum: ["Low", "Medium", "High", "Emergency"] },
+                                technicalSummary: { type: Type.STRING },
+                                recommendedAction: { type: Type.STRING },
+                                preparationChecklist: { type: Type.ARRAY, items: { type: Type.STRING } }
+                            },
+                            required: ["category", "priorityLevel", "technicalSummary", "recommendedAction", "preparationChecklist"]
+                        }
+                    }
+                });
+                return JSON.parse(response.text);
+            } catch (error) {
+                console.error("AI Analysis Error:", error);
+                return null;
+            }
+        };
+
+        const refineProjectDescription = async (text) => {
+            if (!ai) return null;
+            try {
+                const response = await ai.models.generateContent({
+                    model: 'gemini-2.5-flash',
+                    contents: `Rewrite this client enquiry to be clearer and more professional: "${text}". Output only the rewritten text.`,
+                });
+                return response.text;
+            } catch (error) {
+                return null;
+            }
+        };
+
+        // --- Components ---
+
+        const Navbar = ({ currentView, setView }) => {
+            const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+            const navLinks = [
+                { label: 'Home', value: ViewState.HOME },
+                { label: 'Services', value: ViewState.SERVICES },
+                { label: 'About', value: ViewState.ABOUT },
+                { label: 'Contact', value: ViewState.CONTACT },
+            ];
+
+            const handleNavClick = (view) => {
+                setView(view);
+                setIsMobileMenuOpen(false);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            return (
+                <nav className="navbar-bg sticky top-0 z-50 shadow-lg">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="flex justify-between h-24">
+                            <div className="flex items-center cursor-pointer" onClick={() => handleNavClick(ViewState.HOME)}>
+                                <div className="mr-3">
+                                    <svg width="40" height="40" viewBox="0 0 100 100" fill="none">
+                                        <path d="M10 80V40L30 30V80H10Z" fill="#C0C0C0" />
+                                        <path d="M35 80V15L50 5L65 15V80H35Z" fill="#E8E8E8" />
+                                        <path d="M70 80V30L90 40V80H70Z" fill="#C0C0C0" />
+                                    </svg>
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="font-serif text-2xl text-rbs-accent leading-none">RBS</span>
+                                    <span className="text-[8px] tracking-[0.2em] text-zinc-400 uppercase">Contract Services Ltd</span>
+                                </div>
+                            </div>
+
+                            <div className="hidden md:flex items-center space-x-8">
+                                {navLinks.map((link) => (
+                                    <button
+                                        key={link.label}
+                                        onClick={() => handleNavClick(link.value)}
+                                        className={`text-sm font-medium uppercase tracking-wide transition-all ${currentView === link.value ? 'text-white border-b-2 border-rbs-accent' : 'text-zinc-400 hover:text-white'}`}
+                                    >
+                                        {link.label}
+                                    </button>
+                                ))}
+                                <a href={`tel:${PHONE_NUMBER}`} className="border border-rbs-accent text-rbs-accent px-4 py-2 rounded-sm hover:bg-rbs-accent hover:text-black transition-all text-sm uppercase">
+                                    {PHONE_NUMBER}
+                                </a>
+                            </div>
+
+                            <div className="md:hidden flex items-center">
+                                <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-zinc-400">
+                                    {isMobileMenuOpen ? <X /> : <Menu />}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {isMobileMenuOpen && (
+                        <div className="md:hidden bg-zinc-900 border-b border-zinc-800 p-4 space-y-2">
+                            {navLinks.map((link) => (
+                                <button key={link.label} onClick={() => handleNavClick(link.value)} className="block w-full text-left p-2 text-zinc-400 uppercase text-sm">
+                                    {link.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </nav>
+            );
+        };
+
+        const Hero = ({ setView }) => (
+            <div className="relative section-dark py-24 md:py-40 overflow-hidden">
+                <div className="absolute inset-0 opacity-20">
+                    <img src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&q=80&w=1920" className="w-full h-full object-cover grayscale" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-black to-transparent"></div>
+                </div>
+                <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="lg:w-2/3 animate-slide-up">
+                        <div className="inline-block border border-rbs-accent text-rbs-accent px-3 py-1 text-[10px] uppercase tracking-widest mb-6">Serving London & M25</div>
+                        <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 font-serif leading-tight">
+                            Precision Engineering. <br/>
+                            <span className="text-rbs-accent">Reliable Performance.</span>
+                        </h1>
+                        <p className="text-xl text-zinc-400 mb-10 max-w-xl">RBS Contract Services delivers expert mechanical and electrical engineering. We power London's infrastructure with integrity and excellence.</p>
+                        <div className="flex flex-col sm:flex-row gap-4 mb-12">
+                            <button onClick={() => setView(ViewState.CONTACT)} className="bg-rbs-accent text-black px-8 py-4 font-bold uppercase tracking-wider hover:bg-white transition-all flex items-center gap-2">Get a Quote <ArrowRight className="h-4 w-4" /></button>
+                            <button onClick={() => setView(ViewState.SERVICES)} className="border border-zinc-600 text-white px-8 py-4 font-bold uppercase tracking-wider hover:bg-white/10 transition-all">View Our Services</button>
+                        </div>
+                        <div className="flex flex-wrap gap-6">
+                            {[
+                                { label: 'NICEIC Approved' },
+                                { label: 'Gas Safe Registered' },
+                                { label: 'Lutron Accredited' },
+                                { label: '24/7 Support' },
+                                { label: 'ISO 9001' },
+                            ].map(badge => (
+                                <div key={badge.label} className="flex items-center gap-2 text-zinc-400 text-xs uppercase tracking-wider">
+                                    <CheckCircle className="h-4 w-4 text-rbs-accent flex-shrink-0" />
+                                    <span>{badge.label}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const Services = ({ setView }) => {
+            const [selectedService, setSelectedService] = useState(null);
+            const [searchQuery, setSearchQuery] = useState('');
+
+            const filteredServices = SERVICES_DATA.filter(s => 
+                s.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                s.description.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+
+            return (
+                <div className="section-mid py-24">
+                    <div className="max-w-7xl mx-auto px-4">
+                        <div className="text-center mb-16">
+                            <h2 className="text-rbs-accent uppercase text-sm font-bold tracking-widest mb-2">Expertise</h2>
+                            <h3 className="text-4xl font-bold text-white font-serif">Our Core Services</h3>
+                        </div>
+                        
+                        <div className="max-w-md mx-auto mb-12 relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 h-4 w-4" />
+                            <input 
+                                type="text" 
+                                placeholder="Search services..." 
+                                className="w-full bg-black border border-zinc-800 p-3 pl-10 text-white rounded-sm outline-none focus:border-rbs-accent"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8" id="services-grid">
+                            {filteredServices.map(service => (
+                                <div key={service.id} onClick={() => setSelectedService(service)} className="service-card border border-zinc-800 hover:border-rbs-accent cursor-pointer group overflow-hidden" style={{backgroundColor: '#111111', transition: 'border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease'}}>
+                                    <div className="p-8">
+                                        <div className="inline-flex items-center justify-center w-10 h-10 bg-zinc-900 mb-6">
+                                            <service.icon className="h-5 w-5 text-zinc-400 group-hover:text-rbs-accent transition-colors duration-300" />
+                                        </div>
+                                        <h4 className="text-xl font-bold text-white mb-4">{service.title}</h4>
+                                        <p className="text-zinc-400 text-sm mb-6 leading-relaxed">{service.description}</p>
+                                        <div className="text-white text-xs font-bold uppercase tracking-widest flex items-center group-hover:text-rbs-accent transition-colors duration-300">
+                                            View Details <ArrowRight className="ml-2 h-3 w-3" />
+                                        </div>
+                                    </div>
+                                    <div className="max-h-0 group-hover:max-h-64 overflow-hidden transition-all duration-500 ease-in-out">
+                                        <div className="px-8 pb-8 border-t border-zinc-800">
+                                            <ul className="space-y-2 mt-4">
+                                                {service.features.map(f => (
+                                                    <li key={f} className="flex items-center text-xs text-zinc-300">
+                                                        <CheckCircle2 className="h-3 w-3 text-rbs-accent mr-2 flex-shrink-0" /> {f}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                            <div className="mt-4 text-rbs-accent text-xs font-bold uppercase tracking-widest flex items-center">
+                                                Enquire Now <ArrowRight className="ml-2 h-3 w-3" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {selectedService && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
+                            <div className="bg-zinc-900 border border-zinc-800 p-8 max-w-lg w-full relative">
+                                <button onClick={() => setSelectedService(null)} className="absolute top-4 right-4 text-zinc-500 hover:text-white"><X /></button>
+                                <h3 className="text-3xl font-bold text-white mb-4 font-serif">{selectedService.title}</h3>
+                                <p className="text-zinc-400 mb-8">{selectedService.description}</p>
+                                <ul className="space-y-3 mb-8">
+                                    {selectedService.features.map(f => (
+                                        <li key={f} className="flex items-center text-sm text-zinc-300">
+                                            <CheckCircle2 className="h-4 w-4 text-rbs-accent mr-2" /> {f}
+                                        </li>
+                                    ))}
+                                </ul>
+                                <button onClick={() => { setSelectedService(null); setView(ViewState.CONTACT); }} className="w-full bg-rbs-accent text-black p-4 font-bold uppercase">Enquire Now</button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const SmartQuote = () => {
+            const [input, setInput] = useState('');
+            const [isAnalyzing, setIsAnalyzing] = useState(false);
+            const [analysis, setAnalysis] = useState(null);
+            const [submitted, setSubmitted] = useState(false);
+
+            const handleAnalyze = async () => {
+                setIsAnalyzing(true);
+                const result = await analyzeProjectRequest(input);
+                setAnalysis(result || { category: "General", priorityLevel: "Medium", technicalSummary: "Manual Review Required", recommendedAction: "Contact Client", preparationChecklist: ["Gather site details"] });
+                setIsAnalyzing(false);
+            };
+
+            if (submitted) return (
+                <div className="bg-zinc-900 p-8 border border-green-900 text-center">
+                    <Check className="mx-auto h-12 w-12 text-green-500 mb-4" />
+                    <h3 className="text-2xl font-bold text-white mb-2 font-serif">Enquiry Sent</h3>
+                    <p className="text-zinc-400">Our team will be in touch shortly.</p>
+                </div>
+            );
+
+            return (
+                <div className="bg-zinc-900 border border-zinc-800 overflow-hidden">
+                    <div className="bg-black p-6 border-b border-zinc-800 flex items-center gap-2">
+                        <Sparkles className="text-rbs-accent h-5 w-5" />
+                        <h3 className="text-white font-bold font-serif">AI Project Assistant</h3>
+                    </div>
+                    <div className="p-6">
+                        {!analysis ? (
+                            <div className="space-y-4">
+                                <textarea 
+                                    className="w-full bg-black border border-zinc-800 p-4 text-white text-sm min-h-[120px] outline-none focus:border-rbs-accent"
+                                    placeholder="Describe your project or issue..."
+                                    value={input}
+                                    onChange={(e) => setInput(e.target.value)}
+                                />
+                                <button 
+                                    onClick={handleAnalyze}
+                                    disabled={input.length < 10 || isAnalyzing}
+                                    className="w-full bg-rbs-accent text-black p-3 font-bold uppercase text-sm flex items-center justify-center disabled:opacity-50"
+                                >
+                                    {isAnalyzing ? <Loader2 className="animate-spin" /> : "Analyze Request"}
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="space-y-6">
+                                <div className="bg-black p-4 border border-zinc-800 text-sm">
+                                    <div className="flex justify-between mb-2">
+                                        <span className="text-zinc-500 uppercase text-[10px]">Priority</span>
+                                        <span className="text-rbs-accent font-bold uppercase text-[10px]">{analysis.priorityLevel}</span>
+                                    </div>
+                                    <p className="text-white font-medium mb-1">{analysis.category}</p>
+                                    <p className="text-zinc-400 text-xs">{analysis.technicalSummary}</p>
+                                </div>
+                                <div className="space-y-3">
+                                    <input type="text" placeholder="Your Name" className="w-full bg-black border border-zinc-800 p-2 text-white text-sm" required />
+                                    <input type="email" placeholder="Email Address" className="w-full bg-black border border-zinc-800 p-2 text-white text-sm" required />
+                                    <button onClick={() => setSubmitted(true)} className="w-full bg-white text-black p-3 font-bold uppercase text-sm">Send Enquiry</button>
+                                    <button onClick={() => setAnalysis(null)} className="w-full text-zinc-500 text-xs uppercase">Back</button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const Footer = ({ setView }) => (
+            <footer className="footer-bg py-12">
+                <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-12">
+                    <div>
+                        <h3 className="text-white font-serif text-xl mb-4">{COMPANY_NAME}</h3>
+                        <p className="text-zinc-500 text-sm leading-relaxed">Professional M+E contractors serving London and the Home Counties. Lutron Accredited Partner.</p>
+                    </div>
+                    <div>
+                        <h4 className="text-white font-bold uppercase text-xs tracking-widest mb-6">Quick Links</h4>
+                        <ul className="text-zinc-500 text-sm space-y-2">
+                            <li className="hover:text-white cursor-pointer" onClick={() => setView(ViewState.HOME)}>Home</li>
+                            <li className="hover:text-white cursor-pointer" onClick={() => setView(ViewState.SERVICES)}>Services</li>
+                            <li className="hover:text-white cursor-pointer" onClick={() => setView(ViewState.ABOUT)}>About</li>
+                            <li className="hover:text-white cursor-pointer" onClick={() => setView(ViewState.CONTACT)}>Contact</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 className="text-white font-bold uppercase text-xs tracking-widest mb-6">Contact</h4>
+                        <ul className="text-zinc-500 text-sm space-y-4">
+                            <li className="flex items-center gap-2"><MapPin className="h-4 w-4 text-rbs-accent" /> {ADDRESS}</li>
+                            <li className="flex items-center gap-2"><Phone className="h-4 w-4 text-rbs-accent" /> {PHONE_NUMBER}</li>
+                            <li className="flex items-center gap-2"><Mail className="h-4 w-4 text-rbs-accent" /> {EMAIL_ADDRESS}</li>
+                        </ul>
+                    </div>
+                </div>
+                <div className="max-w-7xl mx-auto px-4 mt-12 pt-8 border-t border-zinc-900 text-[10px] text-zinc-600 uppercase tracking-widest flex justify-between">
+                    <span>&copy; {new Date().getFullYear()} {COMPANY_NAME}</span>
+                    <div className="flex gap-4">
+                        <span>Privacy</span>
+                        <span>Terms</span>
+                    </div>
+                </div>
+            </footer>
+        );
+
+        const App = () => {
+            const [currentView, setCurrentView] = useState(ViewState.HOME);
+
+            const renderView = () => {
+                switch (currentView) {
+                    case ViewState.HOME:
+                        return (
+                            <>
+                                <Hero setView={setCurrentView} />
+                                <Services setView={setCurrentView} />
+                                <div className="section-dark py-24">
+                                    <div className="max-w-4xl mx-auto px-4 text-center">
+                                        <h2 className="text-3xl font-bold text-white mb-12 font-serif">Start Your Project</h2>
+                                        <SmartQuote />
+                                    </div>
+                                </div>
+                            </>
+                        );
+                    case ViewState.SERVICES:
+                        return <Services setView={setCurrentView} />;
+                    case ViewState.ABOUT:
+                        return (
+                            <div className="section-dark py-24" style={{minHeight: 'calc(100vh - 96px - 200px)'}}>
+                                <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                                    <img src="https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&q=80&w=1000" className="grayscale border border-zinc-800" />
+                                    <div>
+                                        <h2 className="text-rbs-accent uppercase text-xs font-bold mb-2">About Us</h2>
+                                        <h3 className="text-4xl font-bold text-white mb-6 font-serif">London's Trusted M+E Partner</h3>
+                                        <p className="text-zinc-400 leading-relaxed mb-6">RBS Contract Services specializes in delivering high-complexity mechanical and electrical projects. We are Lutron Accredited professionals bringing world-class smart control to London's infrastructure.</p>
+                                        <button onClick={() => setCurrentView(ViewState.CONTACT)} className="bg-white text-black px-6 py-3 font-bold uppercase text-sm">Contact Our Team</button>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    case ViewState.CONTACT:
+                        return (
+                            <div className="section-dark py-24" style={{minHeight: 'calc(100vh - 96px - 200px)'}}>
+                                <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12">
+                                    <div>
+                                        <h2 className="text-4xl font-bold text-white mb-8 font-serif">Contact Us</h2>
+                                        <div className="space-y-8">
+                                            <div className="flex items-start gap-4">
+                                                <MapPin className="text-rbs-accent" />
+                                                <div><p className="text-white font-bold">Address</p><p className="text-zinc-400">{ADDRESS}</p></div>
+                                            </div>
+                                            <div className="flex items-start gap-4">
+                                                <Phone className="text-rbs-accent" />
+                                                <div><p className="text-white font-bold">Phone</p><p className="text-zinc-400">{PHONE_NUMBER}</p></div>
+                                            </div>
+                                            <div className="flex items-start gap-4">
+                                                <Mail className="text-rbs-accent" />
+                                                <div><p className="text-white font-bold">Email</p><p className="text-zinc-400">{EMAIL_ADDRESS}</p></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <SmartQuote />
+                                </div>
+                            </div>
+                        );
+                    default:
+                        return <Hero setView={setCurrentView} />;
+                }
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col">
+                    <Navbar currentView={currentView} setView={setCurrentView} />
+                <main>{renderView()}</main>
+                    <Footer setView={setCurrentView} />
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+
+        // Scroll animation observer for service cards
+        setTimeout(() => {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            const observe = () => {
+                document.querySelectorAll('.service-card').forEach(card => observer.observe(card));
+            };
+            observe();
+            // Re-observe on navigation changes
+            setInterval(observe, 1000);
+        }, 500);
+    </script>
+</body>
+</html>
